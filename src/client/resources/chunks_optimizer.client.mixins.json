@@ -1,0 +1,32 @@
+{
+	"required": false,
+	"package": "com.chunksoptimizer.client.mixin",
+	"plugin": "com.chunksoptimizer.client.mixin.ChunksOptimizerMixinPlugin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"MinecraftFrameBudgetMixin",
+		"MinecraftTickStatsMixin",
+		"GameRendererFrameStatsMixin",
+		"GlSurfacePresentStatsMixin",
+		"LevelRendererChunkBudgetMixin",
+		"SectionRenderDispatcherBudgetMixin",
+		"WindowRenderScaleMixin",
+		"MinecraftRenderScaleMixin",
+		"GlPresentScaleMixin",
+		"EntityRenderDistanceMixin",
+		"BlockEntityRenderDistanceMixin",
+		"ParticleLimitMixin",
+		"HideHandMixin",
+		"WeatherRenderMixin",
+		"SkyRenderMixin",
+		"ClassicTransparencyMixin",
+		"sodium.SodiumRenderSectionManagerMixin",
+		"sodium.SodiumUploadBudgetMixin"
+	],
+	"injectors": {
+		"defaultRequire": 0
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

@@ -1,0 +1,35 @@
+{
+	"schemaVersion": 1,
+	"id": "chunks_optimizer",
+	"version": "${version}",
+	"name": "Chunks Optimizer",
+	"description": "Reduces chunk loading stutter and FPS impact, tuned for older CPUs. Works with or without Sodium.",
+	"authors": [
+		"Chunks Optimizer Contributors"
+	],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.chunksoptimizer.client.ChunksOptimizerClient"
+		],
+		"sodium:config_api_user": [
+			"com.chunksoptimizer.client.SodiumConfigIntegration"
+		]
+	},
+	"mixins": [
+		{
+			"config": "chunks_optimizer.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"sodium": "*"
+	}
+}

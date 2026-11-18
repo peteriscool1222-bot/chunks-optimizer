@@ -1,0 +1,115 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		name = "CaffeineMC"
+		url = "https://maven.caffeinemc.net/releases"
+	}
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"chunks_optimizer" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+
+	runs {
+		client {
+			// The dev client used to inherit the JVM default heap (1/4 of 6 GB = ~1.5 GB), which left
+			// G1 pinned near full and produced 5-15 young collections every 10 s (~10 ms each).
+			// A fixed 2 GB heap is the largest safe size on this 6 GB machine: 4 GB forces Windows
+			// to page out the IDE/browser and is far worse than a small G1 pause.
+			vmArgs "-Xms2G", "-Xmx2G",
+				"-XX:+UnlockExperimentalVMOptions",
+				"-XX:+UseG1GC",
+				// Low-frequency variant tested best on this machine. The short-pause experiment
+				// (15 ms target / 10% young) doubled collection frequency without improving
+				// frame pacing, so keep the larger young generation and 50 ms target.
+				"-XX:MaxGCPauseMillis=50",
+				// Do not let G1 shrink Eden to almost nothing when the old generation fills up;
+				// that is what turns a few short collections into a hitches-every-second stream.
+				"-XX:G1NewSizePercent=20",
+				"-XX:G1MaxNewSizePercent=40",
+				"-XX:G1HeapRegionSize=8M",
+				"-XX:G1ReservePercent=15",
+				"-XX:SurvivorRatio=32",
+				"-XX:MaxTenuringThreshold=1",
+				"-XX:+ParallelRefProcEnabled",
+				"-XX:+PerfDisableSharedMem",
+				// GC tuning is finished; writing gc.log on every collection was another periodic
+				// disk-I/O source on this 6 GB machine. Keep the tuned G1 profile, drop the logging.
+				"-XX:+DisableExplicitGC"
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// Fabric API. This is technically optional, but you probably want it anyway.
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Compile-time only: MixinExtras ships bundled with Fabric Loader at runtime.
+	compileOnly "io.github.llamalad7:mixinextras-common:0.5.5"
+
+	// Compile-time only: Sodium's config API. Sodium is optional at runtime, so this is never bundled
+	// and the integration class is only loaded when Sodium asks for its config entry point.
+	compileOnly "net.caffeinemc:sodium-fabric:${project.sodium_version}"
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
+	from("LICENSE") {
+		rename { "${it}_$projectName" }
+	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+
+	repositories {
+	}
+}
