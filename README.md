@@ -38,6 +38,7 @@ Key options (defaults tuned for max smoothness on old 4-core CPUs):
 - `gpuUploadBudgetScaling` (default `true`) — adapt Sodium's GPU upload budget to frame time
 - `renderScale` (default `1.0`, range `0.25–1.0`) — internal resolution multiplier; `1.0` = off
 - `sharpen` (default `false`) — contrast-adaptive sharpening (AMD FSR RCAS) after upscaling; off = no extra pass
+- `easu` (default `false`) — AMD FSR 1 EASU edge-adaptive upscale **before** RCAS. Only compiled when OpenGL 4.0+ is available; on Windows GL 3.3 it is ignored and bilinear + RCAS is kept.
 - `sharpenStrength` (default `0.6`, range `0.0–1.0`) — how hard the sharpener works; `1.0` = RCAS maximum, lower = subtler
 - `sharpenDenoise` (default `1.0`, range `0.0–1.0`) — RCAS noise suppression; `0` = plain RCAS (grainiest), `1` = AMD's full denoise step
 - `entityRenderDistance` / `blockEntityRenderDistance` (default `0` = vanilla, max `512`) — absolute block radius
@@ -70,6 +71,7 @@ Notes on `renderScale`:
 - OpenGL backend only: on the Vulkan backend render scaling stays off (the Vulkan present path cannot be upscaled safely by this mod yet).
 - Changing it from the Sodium page applies on the next frame: the framebuffer is resized in place and the main render target is recreated by the game's normal resize path, so no restart is needed.
 - `sharpen=true` runs AMD FSR 1 **RCAS** after the upscale: a 5-tap contrast-adaptive filter that restores edge detail without halos. It is the closest cheap analogue to FSR/DLSS sharpening, costs one extra fullscreen pass, and only runs on the OpenGL backend.
+- `easu=true` replaces the plain bilinear upscale with AMD FSR 1 **EASU** (12-tap, edge-adaptive Lanczos-style filter) before RCAS. It needs **OpenGL 4.0+** because it uses `textureGather`; Linux Mesa GL 4.6 is the intended target. The mod checks the context version at runtime, so the GLSL 400 shader is never compiled on Windows Intel GL 3.3 and that path stays byte-for-byte on the stable bilinear + RCAS behavior. EASU adds one full-resolution offscreen pass, so A/B it separately from RCAS. With `sharpen=false`, EASU still runs but the result is copied 1:1 to the screen with no sharpening.
 - `sharpenStrength` controls how hard RCAS works (`0` = barely visible, `1` = RCAS maximum). Because the GUI/text is rasterised at the reduced resolution, sharpening can restore *perceived* text crispness but not the lost detail. Truly pixel-perfect text needs the GUI rendered at native resolution, which this mod does not do (the GUI layout is tied to the framebuffer size).
 - `sharpenDenoise` is the fix for "sharpening makes everything look grainy". Plain RCAS cannot tell a real edge from pixel-to-pixel noise, so it also amplifies upscaler ringing, texture grain and specular sparkle. The denoise step measures how far the centre pixel sits from the average of its four neighbours relative to the local contrast: coherent edges and glyph strokes keep the full amount, isolated spikes are damped. At `1.0` textured surfaces stay calm while text and block edges stay crisp. If you prefer the raw look, set it to `0` and lower `sharpenStrength` instead.
 - Suggested pairings: `0.6` / `1.0` (default — clean and still visibly sharper), `0.4` / `1.0` (very subtle, best for 0.85+ render scale), `0.9` / `1.0` (maximum text crispness at 0.7 or below).
@@ -147,6 +149,18 @@ The flags above are the **low-frequency** variant that tested best here: a 20% y
 
 Also consider stacking with Sodium, Lithium, FerriteCore, Krypton, ImmediatelyFast, EntityCulling, and ModernFix for maximum smoothness.
 
+## Third-party shader attribution
+
+The EASU and RCAS implementations are ports of AMD FidelityFX FSR 1 (`ffx_fsr1.h`), licensed under the MIT License:
+
+> Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 ## Requirements
 
 - Minecraft **26.3**
@@ -167,11 +181,11 @@ From this folder (Java 25 required):
 gradle build
 ```
 
-Output jar: `build/libs/chunks-optimizer-1.4.0.jar`
+Output jar: `build/libs/chunks-optimizer-1.4.9.jar`
 
 ## Install
 
-1. Put `chunks-optimizer-1.4.0.jar` in your Fabric `mods` folder (Minecraft 26.3).
+1. Put `chunks-optimizer-1.4.9.jar` in your Fabric `mods` folder (Minecraft 26.3).
 2. Optionally add Sodium `0.9.3-beta.5+mc26.3` for the chunk rebuild hook.
 3. Launch once; edit `config/chunks-optimizer.properties` and restart to tune.
 

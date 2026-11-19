@@ -41,6 +41,12 @@ public final class ChunkOptConfig {
 	public static volatile double renderScale = 1.0;
 	/** Apply contrast-adaptive sharpening (AMD FSR RCAS) to the final image. */
 	public static volatile boolean sharpen = false;
+	/**
+	 * Use AMD FSR 1 EASU to upscale the reduced frame before RCAS. Requires OpenGL 4.0+ for
+	 * {@code textureGather}; on OpenGL 3.3 (Windows Intel HD 4600) this has no effect and the
+	 * existing bilinear + RCAS path is kept. Default off.
+	 */
+	public static volatile boolean easu = false;
 	/** Sharpening amount, 0.0-1.0. Higher = crisper edges but more visible grain on textures. */
 	public static volatile double sharpenStrength = 0.6;
 	/**
@@ -96,6 +102,7 @@ public final class ChunkOptConfig {
 		gpuUploadBudgetScaling = getBool(p, "gpuUploadBudgetScaling", gpuUploadBudgetScaling);
 		renderScale = getDouble(p, "renderScale", renderScale);
 		sharpen = getBool(p, "sharpen", sharpen);
+		easu = getBool(p, "easu", easu);
 		// Migration: configs written before the denoise path existed were tuned against plain RCAS,
 		// where 0.8-0.9 looked grainy. Fall back to the new, gentler default once.
 		boolean legacySharpenStrength = !p.containsKey("sharpenDenoise") && p.containsKey("sharpenStrength");
@@ -121,8 +128,8 @@ public final class ChunkOptConfig {
 		LOGGER.info("[Chunks Optimizer] Config: rebuilds={}-{}/{}, uploads={}-{}/{}, adaptive={}, targetFrameMs={}, warmupTicks={}",
 			minScheduledRebuildsPerFrame, maxScheduledRebuildsPerFrame, adaptiveRebuildCap,
 			minUploadsPerFrame, maxUploadsPerFrame, adaptiveUploadCap, adaptive, targetFrameMs, warmupTicks);
-		LOGGER.info("[Chunks Optimizer] Graphics: renderScale={}, sharpen={}, sharpenStrength={}, sharpenDenoise={}, entityDistance={}, blockEntityDistance={}, particleLimit={}, hideHand={}, weatherEnabled={}, skyEnabled={}, classicTransparency={}",
-			renderScale, sharpen, sharpenStrength, sharpenDenoise, entityRenderDistance, blockEntityRenderDistance, particleLimit,
+		LOGGER.info("[Chunks Optimizer] Graphics: renderScale={}, sharpen={}, easu={}, sharpenStrength={}, sharpenDenoise={}, entityDistance={}, blockEntityDistance={}, particleLimit={}, hideHand={}, weatherEnabled={}, skyEnabled={}, classicTransparency={}",
+			renderScale, sharpen, easu, sharpenStrength, sharpenDenoise, entityRenderDistance, blockEntityRenderDistance, particleLimit,
 			hideFirstPersonHand, !disableWeather, !disableSky, forceClassicTransparency);
 		if (debugFrameStats) {
 			LOGGER.info("[Chunks Optimizer] Frame stats logging is enabled (10-second summaries)");
@@ -151,6 +158,7 @@ public final class ChunkOptConfig {
 		p.setProperty("gpuUploadBudgetScaling", Boolean.toString(gpuUploadBudgetScaling));
 		p.setProperty("renderScale", Double.toString(renderScale));
 		p.setProperty("sharpen", Boolean.toString(sharpen));
+		p.setProperty("easu", Boolean.toString(easu));
 		p.setProperty("sharpenStrength", Double.toString(sharpenStrength));
 		p.setProperty("sharpenDenoise", Double.toString(sharpenDenoise));
 		p.setProperty("entityRenderDistance", Integer.toString(entityRenderDistance));

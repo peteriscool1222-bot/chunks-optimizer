@@ -25,8 +25,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <p>The decision is based on the actual blit sizes rather than the configured factor, so the image
  * still fills the window if the factor is changed while the game is running.
  *
- * <p>When sharpening is enabled the blit is replaced by {@link PresentSharpener}, which upscales into
- * an offscreen texture and then applies AMD FSR RCAS while drawing to the swapchain image.
+ * <p>When sharpening or GL 4.0+ EASU is enabled the blit is replaced by {@link PresentSharpener}.
+ * Without EASU, RCAS samples the reduced frame directly. With EASU, the reduced frame is first
+ * upscaled into a full-resolution texture, then RCAS (if enabled) sharpens it on the swapchain draw.
  *
  * <p>The target class is package-private, so it is referenced by name; the hook is optional
  * ({@code require = 0}) in case a future version moves the blit.

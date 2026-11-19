@@ -98,6 +98,9 @@ public final class SodiumConfigIntegration implements ConfigEntryPoint {
 			.addOption(bool(builder, "sharpen", "Sharpen image",
 				"Contrast-adaptive sharpening (AMD FSR RCAS) after upscaling. Recovers edge detail with very little GPU cost; useful below 100% render scale.",
 				false, () -> ChunkOptConfig.sharpen, value -> ChunkOptConfig.sharpen = value))
+			.addOption(bool(builder, "easu", "AMD FSR EASU upscale",
+				"Edge-adaptive spatial upscaling (AMD FSR 1 EASU) before RCAS. Requires OpenGL 4.0+ (Linux Mesa 4.6); on Windows GL 3.3 it has no effect and the stable bilinear path is kept. Adds one full-resolution pass and needs a restart only if the driver does not support it.",
+				false, () -> ChunkOptConfig.easu, value -> ChunkOptConfig.easu = value))
 			.addOption(integer(builder, "sharpen_strength", "Sharpen strength",
 				"How hard the sharpener works. Higher values restore more edge detail (including text) but amplify texture grain; lower values are subtler.",
 				0, 100, 5, 60, PERCENT,
@@ -147,7 +150,7 @@ public final class SodiumConfigIntegration implements ConfigEntryPoint {
 		page.addOptionGroup(diagnostics);
 		mod.addPage(page);
 
-		ChunksOptimizerClient.LOGGER.info("[Chunks Optimizer] Registered Sodium config page (20 options)");
+		ChunksOptimizerClient.LOGGER.info("[Chunks Optimizer] Registered Sodium config page (21 options)");
 	}
 
 	private static BooleanOptionBuilder bool(ConfigBuilder builder, String path, String name, String tooltip,
